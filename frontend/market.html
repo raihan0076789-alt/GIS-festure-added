@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartArch — Market Intelligence</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Leaflet MarkerCluster CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+
+  <!-- Plugin CSS -->
+  <link rel="stylesheet" href="css/market.css" />
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     TOP NAV — matches existing SmartArch navbar
+═══════════════════════════════════════════════ -->
+<nav class="sa-nav">
+  <a href="index.html" class="sa-nav__logo">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="6" fill="#1a1a2e"/><path d="M6 22L14 6L22 22" stroke="#e8c97e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 17h10" stroke="#e8c97e" stroke-width="1.5" stroke-linecap="round"/></svg>
+    <span>SmartArch</span>
+  </a>
+  <div class="sa-nav__links">
+    <a href="dashboard.html">Dashboard</a>
+    <a href="architect.html">Design</a>
+    <a href="market.html" class="active">Market</a>
+  </div>
+  <div class="sa-nav__actions">
+    <span id="nav-user-name" class="sa-nav__user"></span>
+    <button class="sa-btn sa-btn--ghost" onclick="window.location.href='dashboard.html'">Back to Dashboard</button>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════
+     MAIN LAYOUT
+═══════════════════════════════════════════════ -->
+<div class="market-layout">
+
+  <!-- ── LEFT PANEL: Filters & Stats ── -->
+  <aside class="market-sidebar" id="market-sidebar">
+    <div class="sidebar-header">
+      <h2 class="sidebar-title">Market Intelligence</h2>
+      <p class="sidebar-subtitle">Real-time global housing data</p>
+    </div>
+
+    <!-- Search Location -->
+    <div class="filter-group">
+      <label class="filter-label">Search Location</label>
+      <div class="search-wrap">
+        <input type="text" id="location-search" class="filter-input" placeholder="City, region or country…" autocomplete="off" />
+        <button class="search-btn" id="search-btn" title="Search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        </button>
+        <ul class="autocomplete-list" id="autocomplete-list"></ul>
+      </div>
+    </div>
+
+    <!-- Price Range -->
+    <div class="filter-group">
+      <label class="filter-label">Price Range (USD)
+        <span class="filter-value" id="price-label">$50K – $2M</span>
+      </label>
+      <div class="range-dual">
+        <input type="range" id="price-min" min="10000" max="5000000" step="10000" value="50000" />
+        <input type="range" id="price-max" min="10000" max="5000000" step="10000" value="2000000" />
+      </div>
+    </div>
+
+    <!-- Property Type -->
+    <div class="filter-group">
+      <label class="filter-label">Property Type</label>
+      <div class="chip-group" id="type-chips">
+        <button class="chip active" data-value="all">All</button>
+        <button class="chip" data-value="residential">Residential</button>
+        <button class="chip" data-value="apartment">Apartment</button>
+        <button class="chip" data-value="commercial">Commercial</button>
+        <button class="chip" data-value="land">Land</button>
+      </div>
+    </div>
+
+    <!-- Affordability Factors -->
+    <div class="filter-group">
+      <label class="filter-label">Proximity Factors</label>
+      <div class="toggle-list">
+        <label class="toggle-row">
+          <span>Near city centre (&lt; 10km)</span>
+          <input type="checkbox" id="fac-city" class="factor-toggle" checked />
+          <span class="toggle-switch"></span>
+        </label>
+        <label class="toggle-row">
+          <span>Electricity available</span>
+          <input type="checkbox" id="fac-electricity" class="factor-toggle" checked />
+          <span class="toggle-switch"></span>
+        </label>
+        <label class="toggle-row">
+          <span>Public transport</span>
+          <input type="checkbox" id="fac-transport" class="factor-toggle" />
+          <span class="toggle-switch"></span>
+        </label>
+        <label class="toggle-row">
+          <span>Schools nearby</span>
+          <input type="checkbox" id="fac-schools" class="factor-toggle" />
+          <span class="toggle-switch"></span>
+        </label>
+        <label class="toggle-row">
+          <span>Low flood risk</span>
+          <input type="checkbox" id="fac-flood" class="factor-toggle" />
+          <span class="toggle-switch"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Cost-Effectiveness Score -->
+    <div class="filter-group">
+      <label class="filter-label">Min. Value Score
+        <span class="filter-value" id="score-label">60 / 100</span>
+      </label>
+      <input type="range" id="score-min" min="0" max="100" step="5" value="60" />
+    </div>
+
+    <!-- Apply Filters -->
+    <button class="sa-btn sa-btn--primary full-width" id="apply-filters-btn">
+      Apply Filters
+    </button>
+    <button class="sa-btn sa-btn--ghost full-width" id="reset-filters-btn" style="margin-top:6px;">Reset</button>
+
+    <!-- Stats Cards -->
+    <div class="stats-section">
+      <h3 class="stats-heading">Visible Area Stats</h3>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <span class="stat-label">Listings</span>
+          <span class="stat-value" id="stat-count">—</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Avg Price</span>
+          <span class="stat-value" id="stat-avg">—</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Median</span>
+          <span class="stat-value" id="stat-median">—</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">YoY Change</span>
+          <span class="stat-value" id="stat-yoy">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trend mini-chart -->
+    <div class="trend-section">
+      <h3 class="stats-heading">12-Month Trend</h3>
+      <canvas id="trend-chart" height="90"></canvas>
+    </div>
+  </aside>
+
+  <!-- ── MAP AREA ── -->
+  <main class="market-map-wrap">
+
+    <!-- Map toolbar -->
+    <div class="map-toolbar">
+      <div class="toolbar-left">
+        <button class="tool-btn active" id="view-map" title="Map view">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+          Map
+        </button>
+        <button class="tool-btn" id="view-heatmap" title="Heat map">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          Heat
+        </button>
+        <button class="tool-btn" id="view-clusters" title="Cluster view">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="3"/><circle cx="19" cy="5" r="3"/><circle cx="19" cy="19" r="3"/></svg>
+          Cluster
+        </button>
+      </div>
+      <div class="toolbar-right">
+        <span class="live-badge">
+          <span class="live-dot"></span>
+          Live data
+        </span>
+        <span class="data-updated" id="last-updated">Fetching…</span>
+        <button class="tool-btn" id="toggle-sidebar-btn" title="Toggle sidebar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Leaflet map -->
+    <div id="market-map"></div>
+
+    <!-- Bottom info strip -->
+    <div class="map-footer">
+      <span id="map-coords" class="coords-label">Hover over map for coordinates</span>
+      <span class="footer-sep">|</span>
+      <span id="map-zoom-level" class="coords-label">Zoom: 5</span>
+      <span class="footer-sep">|</span>
+      <a href="https://www.openstreetmap.org/copyright" target="_blank" class="coords-label">© OpenStreetMap</a>
+    </div>
+  </main>
+
+  <!-- ── RIGHT PANEL: Selected Listing Detail ── -->
+  <aside class="detail-panel" id="detail-panel">
+    <div class="detail-empty" id="detail-empty">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.3"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+      <p>Click a listing on the map to see details</p>
+    </div>
+    <div class="detail-content" id="detail-content" style="display:none;">
+      <div class="detail-header">
+        <h3 id="detail-title">Property Name</h3>
+        <span class="detail-badge" id="detail-type-badge">Residential</span>
+      </div>
+      <div class="detail-price-row">
+        <div>
+          <span class="detail-price-label">Asking Price</span>
+          <span class="detail-price" id="detail-price">$450,000</span>
+        </div>
+        <div>
+          <span class="detail-price-label">Per sqft</span>
+          <span class="detail-price" id="detail-sqft-price">$210</span>
+        </div>
+      </div>
+
+      <!-- Value Score -->
+      <div class="value-score-wrap">
+        <span class="vs-label">Value Score</span>
+        <div class="vs-bar-wrap">
+          <div class="vs-bar" id="vs-bar"></div>
+        </div>
+        <span class="vs-num" id="vs-num">—</span>
+      </div>
+
+      <!-- Factors grid -->
+      <div class="factor-grid" id="factor-grid"></div>
+
+      <!-- Market comparison chart -->
+      <div class="detail-section">
+        <h4 class="detail-section-title">vs. Area Average</h4>
+        <canvas id="compare-chart" height="100"></canvas>
+      </div>
+
+      <!-- Key details -->
+      <div class="detail-section">
+        <h4 class="detail-section-title">Property Details</h4>
+        <table class="kv-table" id="kv-table"></table>
+      </div>
+
+      <!-- CTA -->
+      <div class="detail-cta">
+        <button class="sa-btn sa-btn--primary full-width" id="design-btn">
+          Design on this Plot →
+        </button>
+        <button class="sa-btn sa-btn--ghost full-width" id="save-btn" style="margin-top:6px;">Save to Favourites</button>
+      </div>
+    </div>
+  </aside>
+
+</div><!-- /market-layout -->
+
+<!-- Loading overlay -->
+<div class="map-loading" id="map-loading">
+  <div class="spinner"></div>
+  <span>Loading market data…</span>
+</div>
+
+<!-- Notification toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Scripts -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="js/market-api.js"></script>
+<script src="js/market-map.js"></script>
+<script src="js/market-filters.js"></script>
+<script src="js/market-charts.js"></script>
+<script src="js/market.js"></script>
+</body>
+</html>

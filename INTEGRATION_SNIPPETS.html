@@ -1,0 +1,149 @@
+<!--
+  ═══════════════════════════════════════════════════════════════
+  SMARTARCH — MARKET PLUGIN INTEGRATION SNIPPETS
+  Copy-paste these into your EXISTING files.
+  Zero changes to existing logic — purely additive.
+  ═══════════════════════════════════════════════════════════════
+-->
+
+
+<!-- ─────────────────────────────────────────────────────────────
+  1. dashboard.html
+     Add this card to your existing quick-actions / tools grid.
+     Find the section where your existing tool cards live and
+     paste this block alongside them.
+──────────────────────────────────────────────────────────────── -->
+<a href="market.html" class="tool-card market-tool-card">
+  <div class="tool-card__icon">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+      <line x1="8" y1="2" x2="8" y2="18"/>
+      <line x1="16" y1="6" x2="16" y2="22"/>
+    </svg>
+  </div>
+  <div class="tool-card__body">
+    <h3 class="tool-card__title">Market Intelligence</h3>
+    <p class="tool-card__desc">Explore real-time global housing prices, find cost-effective plots and browse by location factors.</p>
+  </div>
+  <span class="tool-card__badge">New</span>
+</a>
+
+<!-- Optional CSS to add to dashboard.css (or inline in a <style> block): -->
+<style>
+.market-tool-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(232,201,126,0.07) 0%, transparent 60%);
+  border: 1px solid rgba(232,201,126,0.25);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s, background 0.2s;
+  cursor: pointer;
+}
+.market-tool-card:hover {
+  border-color: rgba(232,201,126,0.5);
+  background: linear-gradient(135deg, rgba(232,201,126,0.12) 0%, transparent 60%);
+}
+.market-tool-card .tool-card__icon {
+  color: #e8c97e;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.market-tool-card .tool-card__title { font-size: 15px; font-weight: 600; margin: 0 0 4px; }
+.market-tool-card .tool-card__desc  { font-size: 13px; color: #a0a0b8; margin: 0; line-height: 1.5; }
+.market-tool-card .tool-card__badge {
+  position: absolute; top: 10px; right: 12px;
+  background: rgba(76,175,118,0.15); color: #4caf76;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+  padding: 2px 8px; border-radius: 10px; text-transform: uppercase;
+}
+</style>
+
+
+<!-- ─────────────────────────────────────────────────────────────
+  2. index.html  (landing / nav)
+     Add "Market" to your existing top nav <ul>.
+──────────────────────────────────────────────────────────────── -->
+<li><a href="market.html">Market</a></li>
+
+
+<!-- ─────────────────────────────────────────────────────────────
+  3. architect.html
+     When the user arrives from market.html via "Design on this Plot →"
+     the selected plot is in sessionStorage under 'market_selected_plot'.
+     Paste this block INSIDE your existing architect.js init function,
+     or at the bottom of architect.html before </body>.
+──────────────────────────────────────────────────────────────── -->
+<script>
+(function injectMarketPlot() {
+  if (!window.location.search.includes('from=market')) return;
+  const raw = sessionStorage.getItem('market_selected_plot');
+  if (!raw) return;
+  try {
+    const plot = JSON.parse(raw);
+    sessionStorage.removeItem('market_selected_plot');
+
+    // Pre-fill site dimensions if your architect form has these fields
+    const sqftInput = document.getElementById('site-sqft') || document.getElementById('plot-area');
+    if (sqftInput && plot.sqft) sqftInput.value = plot.sqft;
+
+    // Show a dismissible banner
+    const banner = document.createElement('div');
+    banner.style.cssText = `
+      position:fixed; top:64px; left:50%; transform:translateX(-50%);
+      background:#2d2d4a; border:1px solid rgba(232,201,126,0.4);
+      color:#f0ede8; font-size:13px; padding:10px 20px;
+      border-radius:8px; z-index:9999; display:flex; align-items:center; gap:12px;
+      box-shadow:0 4px 20px rgba(0,0,0,0.4);
+    `;
+    banner.innerHTML = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e8c97e" stroke-width="2">
+        <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+      </svg>
+      <span>Designing on <strong>${plot.name}</strong> — $${plot.price.toLocaleString()}</span>
+      <button onclick="this.parentNode.remove()" style="background:none;border:none;color:#a0a0b8;cursor:pointer;font-size:16px;line-height:1;">×</button>
+    `;
+    document.body.appendChild(banner);
+    setTimeout(() => banner.remove(), 8000);
+  } catch (e) {
+    console.warn('Could not parse market plot:', e);
+  }
+})();
+</script>
+
+
+<!-- ─────────────────────────────────────────────────────────────
+  4. backend-main/server.js  (or app.js)
+     Add one line to proxy /api/market/* to backend-market.
+     This lets the frontend use a single origin. Optional but recommended.
+     Install: npm install http-proxy-middleware
+──────────────────────────────────────────────────────────────── -->
+<script type="text/plain" id="proxy-snippet">
+// In backend-main/server.js, AFTER your existing routes:
+const { createProxyMiddleware } = require('http-proxy-middleware');
+app.use('/api/market', createProxyMiddleware({
+  target: `http://localhost:${process.env.MARKET_PORT || 4000}`,
+  changeOrigin: true,
+}));
+// Then in frontend/js/market-api.js, change BASE to:
+// const BASE = '/api/market';
+</script>
+
+
+<!-- ─────────────────────────────────────────────────────────────
+  5. Root package.json  — add market backend to start script
+     Merge with your existing root package.json scripts.
+──────────────────────────────────────────────────────────────── -->
+<script type="text/plain" id="root-package-snippet">
+{
+  "scripts": {
+    "start:market": "cd backend-market && node server.js",
+    "dev:market":   "cd backend-market && nodemon server.js",
+    "dev:all":      "concurrently \"npm run dev --prefix backend-main\" \"npm run dev --prefix backend-ai\" \"npm run dev:market\""
+  }
+}
+</script>
